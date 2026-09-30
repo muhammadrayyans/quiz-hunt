@@ -1,3 +1,6 @@
 ## LOCAL FILE TO IGNORE
 .env
-local-test
+test
+browser_profile
+.chrome-profile
+chrome.sh
