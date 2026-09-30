@@ -1,6 +1,0 @@
-∙ Invoke-WebRequest http://127.0.0.1:9222/json/version
-
-~ took 2s
-❯ & "C:\Program Files\Google\Chrome\Application\chrome.exe" `
-∙   --remote-debugging-port=9222 `
-∙   --user-data-dir="E:\C drive -E\Collage\programing\quiz-hunt\.chrome-profile"
