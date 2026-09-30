@@ -2,6 +2,9 @@ import time
 from typing import Protocol
 
 
+DEFAULT_REQUEST_INTERVAL_SECONDS = 2.5
+
+
 class FormBrowser(Protocol):
 	def get_questions(self) -> list[dict]: ...
 
@@ -23,12 +26,12 @@ def _log(message: str) -> None:
 def complete_quiz(
 	browser: FormBrowser,
 	solver: AnswerSolver,
-	request_delay_seconds: float = 2.0,
+	request_interval_seconds: float = DEFAULT_REQUEST_INTERVAL_SECONDS,
 ) -> None:
-	if request_delay_seconds < 0:
-		raise ValueError("Request delay cannot be negative.")
+	if request_interval_seconds < 0:
+		raise ValueError("Request interval cannot be negative.")
 
-	has_requested_answer = False
+	last_request_started_at: float | None = None
 	page_number = 0
 	while True:
 		page_number += 1
@@ -50,12 +53,17 @@ def complete_quiz(
 				option_text = option.get("text") or option.get("identifier") or ""
 				_log(f"{question_label} Option {option['index']}: {option_text}")
 
-			if has_requested_answer and request_delay_seconds:
-				_log(
-					f"{question_label} Waiting {request_delay_seconds:g}s before next Gemini request."
-				)
-				time.sleep(request_delay_seconds)
+			if last_request_started_at is not None:
+				elapsed = time.monotonic() - last_request_started_at
+				wait_seconds = request_interval_seconds - elapsed
+				if wait_seconds > 0:
+					_log(
+						f"{question_label} Waiting {wait_seconds:.1f}s to maintain "
+						f"a {request_interval_seconds:g}s Gemini request interval."
+					)
+					time.sleep(wait_seconds)
 
+			last_request_started_at = time.monotonic()
 			_log(f"{question_label} Gemini is thinking...")
 			try:
 				option_index = solver.choose_option(
@@ -65,7 +73,6 @@ def complete_quiz(
 				_log(f"{question_label} Gemini request/response failed: {exc}")
 				raise
 
-			has_requested_answer = True
 			valid_indices = {
 				option["index"] for option in question["options"]
 			}

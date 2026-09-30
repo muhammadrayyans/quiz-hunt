@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.agent import complete_quiz
+from src.agent import DEFAULT_REQUEST_INTERVAL_SECONDS, complete_quiz
 from src.browser import CDP_URL, GoogleFormBrowser
 from src.llm import GeminiQuizSolver
 
@@ -24,10 +24,20 @@ def main() -> None:
         help="Chrome remote debugging endpoint (default: %(default)s)",
     )
     parser.add_argument(
+        "--request-interval",
         "--request-delay",
+        dest="request_interval",
         type=float,
-        default=float(os.getenv("QUIZ_REQUEST_DELAY_SECONDS", "2")),
-        help="Seconds to wait between Gemini questions (default: %(default)s)",
+        default=float(
+            os.getenv(
+                "QUIZ_REQUEST_INTERVAL_SECONDS",
+                os.getenv(
+                    "QUIZ_REQUEST_DELAY_SECONDS",
+                    str(DEFAULT_REQUEST_INTERVAL_SECONDS),
+                ),
+            )
+        ),
+        help="Minimum seconds between Gemini request starts (default: %(default)s)",
     )
     args = parser.parse_args()
 
@@ -38,7 +48,7 @@ def main() -> None:
         complete_quiz(
             browser,
             solver,
-            request_delay_seconds=args.request_delay,
+            request_interval_seconds=args.request_interval,
         )
         print("Quiz submitted.")
     finally:
